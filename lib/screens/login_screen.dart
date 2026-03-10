@@ -144,31 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () => Get.to(() => SignupScreen()),
                 child: Text('Don\'t have an account? Sign up'),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('OR'),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Obx(() => SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: authController.isLoading.value
-                      ? null
-                      : () => authController.signInWithGoogle(),
-                  icon: Icon(Icons.g_mobiledata),
-                  label: Text('Sign in with Google'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
-              )),
             ],
           ),
         ),

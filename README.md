@@ -1,6 +1,6 @@
 # Todo App - Flutter Firebase
 
-A full-featured Todo application built with Flutter and Firebase. Users can create, edit, complete, and delete tasks with email/password or Google Sign-In authentication.
+A full-featured Todo application built with Flutter and Firebase. Users can create, edit, complete, and delete tasks with email/password authentication.
 
 ---
 
@@ -8,7 +8,7 @@ A full-featured Todo application built with Flutter and Firebase. Users can crea
 
 This is a cross-platform mobile Todo app that allows users to:
 
-- **Authenticate** via Email/Password or Google Sign-In
+- **Authenticate** via Email/Password
 - **Create** tasks with title and description
 - **Edit** existing tasks
 - **Complete/Incomplete** tasks with confirmation
@@ -26,7 +26,7 @@ This is a cross-platform mobile Todo app that allows users to:
 | Framework | Flutter (Dart 3.6+) |
 | State Management | GetX |
 | Backend | Firebase |
-| Authentication | Firebase Auth (Email + Google) |
+| Authentication | Firebase Auth (Email/Password) |
 | Database | Firebase Realtime Database |
 | Local Storage | SharedPreferences |
 | UI | Material Design 3, Google Fonts (Poppins) |
@@ -47,7 +47,7 @@ lib/
 │   └── task_model.dart       # Task data model
 └── screens/
     ├── splash_screen.dart    # Initial loading, auth check
-    ├── login_screen.dart    # Email/Google login
+    ├── login_screen.dart    # Email/Password login
     ├── signup_screen.dart   # User registration
     ├── home_screen.dart     # Task list, stats, actions
     ├── task_screen.dart     # Add/Edit task form
@@ -71,7 +71,7 @@ lib/
 1. In Firebase Console, click the **Android** icon to add an app
 2. Enter your **Android package name** (e.g., `com.example.todo_app`)
    - Find it in `android/app/build.gradle` → `applicationId`
-3. (Optional) Add app nickname and SHA-1 for Google Sign-In
+3. (Optional) Add app nickname
 4. Click **Register app**
 5. Download `google-services.json` and place it in `android/app/`
 
@@ -80,9 +80,6 @@ lib/
 #### Authentication
 1. Go to **Build** → **Authentication** → **Get started**
 2. Enable **Email/Password** sign-in method
-3. Enable **Google** sign-in method
-   - Add support email
-   - Download `google-services.json` if not done
 
 #### Realtime Database
 1. Go to **Build** → **Realtime Database** → **Create Database**
@@ -92,7 +89,9 @@ lib/
 
 ### Step 4: Set Database Rules
 
-In Realtime Database → **Rules** tab, use:
+**Important:** Without correct rules, you'll get `permission-denied` errors.
+
+In Firebase Console → **Realtime Database** → **Rules** tab, paste these rules (or use `database.rules.json` in the project root):
 
 ```json
 {
@@ -110,6 +109,8 @@ In Realtime Database → **Rules** tab, use:
   }
 }
 ```
+
+Click **Publish** to save.
 
 ### Step 5: FlutterFire CLI Setup
 
@@ -215,8 +216,7 @@ SplashScreen (2s)
     ├── Logged in? → HomeScreen
     └── Not logged in? → LoginScreen
                             ├── Sign up → SignupScreen → LoginScreen
-                            ├── Login (Email/Google) → HomeScreen
-                            └── Google Sign-In → HomeScreen
+                            └── Login (Email/Password) → HomeScreen
 
 HomeScreen
     ├── Add task (+) → TaskScreen (add mode)
@@ -237,7 +237,6 @@ HomeScreen
 | firebase_auth | ^6.2.0 | Authentication |
 | firebase_database | ^12.1.4 | Realtime Database |
 | get | ^4.6.6 | State management, routing |
-| google_sign_in | ^6.2.1 | Google Sign-In |
 | google_fonts | ^6.1.0 | Poppins font |
 | shared_preferences | ^2.2.2 | Local session storage |
 
@@ -251,6 +250,18 @@ HomeScreen
 | `android/app/google-services.json` | Android Firebase config |
 | `android/app/build.gradle` | minSdk 23, applicationId |
 | `pubspec.yaml` | Flutter dependencies |
+
+---
+
+## 🔧 Troubleshooting
+
+### "Permission denied" / "Client doesn't have permission"
+- **Fix:** Update Firebase Realtime Database rules (see Step 4 above)
+- Ensure rules allow `auth != null` for `/tasks` and `/users`
+- If using Test mode, it expires after 30 days — switch to the rules above
+
+### Tasks listener error after logout
+- Fixed in code: the tasks listener is now cancelled when user logs out
 
 ---
 

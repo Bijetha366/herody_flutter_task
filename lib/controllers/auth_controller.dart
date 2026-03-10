@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
@@ -10,7 +9,6 @@ import '../screens/home_screen.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
   Rx<User?> user = Rx<User?>(null);
@@ -182,47 +180,6 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    try {
-      isLoading.value = true;
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
-
-      // Save user data to Realtime Database using UserModel
-      try {
-        final newUser = UserModel(
-          uid: userCredential.user!.uid,
-          email: userCredential.user!.email!,
-          name: userCredential.user!.displayName ?? 'Google User',
-          createdAt: DateTime.now().toIso8601String(),
-        );
-        
-        await _database.child('users').child(userCredential.user!.uid).set(newUser.toMap());
-        print('✅ Google user data saved to Realtime Database');
-        
-        Get.snackbar('Success', 'Google sign-in successful');
-        Get.offAll(() => const HomeScreen());
-        
-      } catch (dbError) {
-        print('❌ Google database error: $dbError');
-        Get.snackbar('Error', 'Failed to save user data.', backgroundColor: Colors.red);
-        Get.offAll(() => const HomeScreen());  // Still navigate - user is authenticated
-      }
-    } catch (e) {
-      Get.snackbar('Error', e.toString());
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   Future<void> fetchUserData(String uid) async {
     try {
       DatabaseEvent event = await _database.child('users').child(uid).once();
@@ -252,7 +209,6 @@ class AuthController extends GetxController {
   Future<void> logout() async {
     try {
       await _auth.signOut();
-      await _googleSignIn.signOut();
       Get.snackbar('Success', 'Logged out successfully');
       
       // Navigate to login screen after logout

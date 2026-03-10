@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/task_model.dart';
@@ -10,42 +11,58 @@ class TaskController extends GetxController {
   RxList<TaskModel> tasks = <TaskModel>[].obs;
   RxBool isLoading = false.obs;
 
+  StreamSubscription<DatabaseEvent>? _tasksSubscription;
+
   @override
   void onInit() {
     super.onInit();
     ever(_authController.user, (user) {
       if (user != null) {
+        _cancelTasksListener();
         fetchTasks();
         setupRealtimeListener();
       } else {
+        _cancelTasksListener();
         tasks.clear();
       }
     });
   }
 
+  void _cancelTasksListener() {
+    _tasksSubscription?.cancel();
+    _tasksSubscription = null;
+  }
+
   void setupRealtimeListener() {
     if (_authController.user.value == null) return;
-    
-    _database
-        .child('tasks')
-        .onValue
-        .listen((event) {
-      tasks.clear();
-      if (event.snapshot.value != null) {
-        Map<dynamic, dynamic> data = event.snapshot.value as Map<dynamic, dynamic>;
-        data.forEach((key, value) {
-          // ✅ Only add tasks that belong to current user
-          if (value['userId'] == _authController.user.value!.uid) {
-            TaskModel task = TaskModel.fromMap({
-              'id': key,
-              ...value,
-            });
-            tasks.add(task);
-          }
-        });
-        tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      }
-    });
+
+    _cancelTasksListener();
+
+    _tasksSubscription = _database.child('tasks').onValue.listen(
+      (event) {
+        if (_authController.user.value == null) return;
+
+        tasks.clear();
+        if (event.snapshot.value != null) {
+          Map<dynamic, dynamic> data =
+              event.snapshot.value as Map<dynamic, dynamic>;
+          data.forEach((key, value) {
+            if (value['userId'] == _authController.user.value!.uid) {
+              TaskModel task = TaskModel.fromMap({
+                'id': key,
+                ...value,
+              });
+              tasks.add(task);
+            }
+          });
+          tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        }
+      },
+      onError: (error) {
+        // Gracefully handle permission denied (e.g. when user logs out)
+        print('Tasks listener error (ignored): $error');
+      },
+    );
   }
 
   Future<void> fetchTasks() async {
@@ -170,9 +187,15 @@ class TaskController extends GetxController {
     }
   }
 
-  List<TaskModel> get completedTasks => 
+  @override
+  void onClose() {
+    _cancelTasksListener();
+    super.onClose();
+  }
+
+  List<TaskModel> get completedTasks =>
       tasks.where((task) => task.isCompleted).toList();
-  
-  List<TaskModel> get pendingTasks => 
+
+  List<TaskModel> get pendingTasks =>
       tasks.where((task) => !task.isCompleted).toList();
 }

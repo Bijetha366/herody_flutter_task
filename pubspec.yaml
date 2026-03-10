@@ -46,9 +46,6 @@ dependencies:
   # UI
   google_fonts: ^6.1.0
   
-  # Google Sign In
-  google_sign_in: ^6.2.1
-  
   # Local Storage
   shared_preferences: ^2.2.2
 
